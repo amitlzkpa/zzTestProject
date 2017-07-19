@@ -35,27 +35,7 @@ public class Foo : MonoBehaviour
 
 
 
-
-    private string GOOG_API_KEY = "AIzaSyB6BE6Ryi4Qc83XgN1g-d0ePrvWoINNsnU";
-    private string googQueryBase = @"https://maps.googleapis.com/maps/api/staticmap?
-                                    center=<<DD_center>>&
-                                    zoom=13&
-                                    format=png32&
-                                    size=1081x1081&
-                                    scale=1&
-                                    maptype=satellite&
-                                    key=<<GOOG_API_KEY>>";
-
-
-    private string googQueryLink
-    {
-        get
-        {
-            return googQueryBase.Replace("<<GOOG_API_KEY>>", GOOG_API_KEY)
-                                .Replace("<<DD_center>>", DD_center.x.ToString("F6") + "," + DD_center.y.ToString("F6")
-                                .Replace(System.Environment.NewLine, ""));
-        }
-    }
+        
 
 
     private string downloadFolderPath;
@@ -96,10 +76,11 @@ public class Foo : MonoBehaviour
                                                                                                                tL.x.ToString("F6"),
                                                                                                                bR.y.ToString("F6"),
                                                                                                                bR.x.ToString("F6"));
+        string satteliteImageQueryString = string.Format("https://maps.googleapis.com/maps/api/staticmap?center={0},{1}&zoom=13&format=png32&size=1081x1081&maptype=satellite&key={2}", DD_center.x.ToString("F6"), DD_center.y.ToString("F6"), "AIzaSyB6BE6Ryi4Qc83XgN1g-d0ePrvWoINNsnU");
 
         WWW wwwTerrain = new WWW(terrainQueryString);
         StartCoroutine(WaitForTerrainImage(wwwTerrain));
-        WWW wwwSatellite = new WWW(googQueryLink);
+        WWW wwwSatellite = new WWW(satteliteImageQueryString);
         StartCoroutine(WaitForSatelliteImage(wwwSatellite));
     }
 
@@ -108,7 +89,7 @@ public class Foo : MonoBehaviour
 
     IEnumerator WaitForSatelliteImage(WWW www)
     {
-        Debug.Log("Querying..." + www.url);
+        Debug.Log("Querying for satellite image..." + www.url);
         yield return www;
 
         // check for errors
@@ -129,7 +110,7 @@ public class Foo : MonoBehaviour
 
     IEnumerator WaitForTerrainImage(WWW www)
     {
-        Debug.Log("Querying..." + www.url);
+        Debug.Log("Querying for terrain image..." + www.url);
         yield return www;
 
         // check for errors
@@ -188,12 +169,6 @@ public class Foo : MonoBehaviour
 		if (Input.GetKeyDown(KeyCode.Space))
         {
             getHeightMap();
-        }
-
-
-        if (Input.GetKeyDown(KeyCode.S))
-        {
-            print(googQueryLink);
         }
 	}
 }
