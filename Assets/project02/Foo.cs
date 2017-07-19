@@ -36,17 +36,39 @@ public class Foo : MonoBehaviour
 
 
 
+    private string GOOG_API_KEY = "AIzaSyB6BE6Ryi4Qc83XgN1g-d0ePrvWoINNsnU";
+    private string googQueryBase = @"https://maps.googleapis.com/maps/api/staticmap?
+                                    center=<<DD_center>>&
+                                    zoom=13&
+                                    format=png32&
+                                    size=1081x1081&
+                                    scale=1&
+                                    maptype=satellite&
+                                    key=<<GOOG_API_KEY>>";
 
 
+    private string googQueryLink
+    {
+        get
+        {
+            return googQueryBase.Replace("<<GOOG_API_KEY>>", GOOG_API_KEY)
+                                .Replace("<<DD_center>>", DD_center.x.ToString("F6") + "," + DD_center.y.ToString("F6")
+                                .Replace(System.Environment.NewLine, ""));
+        }
+    }
 
 
     private string downloadFolderPath;
-    private string downloadFileName = "myterrain";
-    private string downloadFileExtension = "zip";
-    private string downloadFilePath;
+    private string terrDownloadFileName = "myterrain";
+    private string terrDownloadFileExtension = "zip";
+    private string terrDownloadFilePath;
+
+    private string sattDownloadFileName = "satt";
+    private string sattDownloadFileExtension = "png";
+    private string sattDownloadFilePath;
     
-    public Vector2 DD_center = new Vector2(40.706968f, -74.009675f);
-    public float squareSide = 2000;
+    public Vector2 DD_center;
+    public float squareSide;
 
 
 
@@ -69,32 +91,56 @@ public class Foo : MonoBehaviour
         Vector2 tL = getOffsetCoords(DD_center, (squareSide / 2), -(squareSide / 2));
         Vector2 bR = getOffsetCoords(DD_center, -(squareSide / 2), (squareSide / 2));
 
-        string fullQueryString = string.Format("http://terrain.party/api/export?name={0}&box={1},{2},{3},{4}", downloadFileName,
+        string terrainQueryString = string.Format("http://terrain.party/api/export?name={0}&box={1},{2},{3},{4}", terrDownloadFileName,
                                                                                                                tL.y.ToString("F6"),
                                                                                                                tL.x.ToString("F6"),
                                                                                                                bR.y.ToString("F6"),
                                                                                                                bR.x.ToString("F6"));
-        Debug.Log("Querying..." + fullQueryString);
-        WWW www = new WWW(fullQueryString);
-        StartCoroutine(WaitForRequest(www));
+
+        WWW wwwTerrain = new WWW(terrainQueryString);
+        StartCoroutine(WaitForTerrainImage(wwwTerrain));
+        WWW wwwSatellite = new WWW(googQueryLink);
+        StartCoroutine(WaitForSatelliteImage(wwwSatellite));
     }
 
 
 
 
-    IEnumerator WaitForRequest(WWW www)
+    IEnumerator WaitForSatelliteImage(WWW www)
     {
+        Debug.Log("Querying..." + www.url);
         yield return www;
 
         // check for errors
         if (www.error == null)
         {
             byte[] dwnBytes = www.bytes;
-            File.WriteAllBytes(downloadFilePath, dwnBytes);
+            File.WriteAllBytes(sattDownloadFilePath, dwnBytes);
+            Debug.Log("Done terrain.");
+        }
+        else
+        {
+            Debug.Log("WWW Error: " + www.error);
+        }
+    }
 
-            FileInfo fileToDecompress = new FileInfo(downloadFilePath);
 
-            DirectoryInfo decompressFolder = new DirectoryInfo(downloadFolderPath + downloadFileName);
+
+
+    IEnumerator WaitForTerrainImage(WWW www)
+    {
+        Debug.Log("Querying..." + www.url);
+        yield return www;
+
+        // check for errors
+        if (www.error == null)
+        {
+            byte[] dwnBytes = www.bytes;
+            File.WriteAllBytes(terrDownloadFilePath, dwnBytes);
+
+            FileInfo fileToDecompress = new FileInfo(terrDownloadFilePath);
+
+            DirectoryInfo decompressFolder = new DirectoryInfo(downloadFolderPath + terrDownloadFileName);
             decompressFolder.Create();
 
             FastZip z = new FastZip();
@@ -120,7 +166,7 @@ public class Foo : MonoBehaviour
                     fl.Delete();
                 }
             }
-            Debug.Log("Done");
+            Debug.Log("Done terrain.");
         }
         else
         {
@@ -133,7 +179,8 @@ public class Foo : MonoBehaviour
     // Use this for initialization
     void Start () {
         downloadFolderPath = Directory.GetCurrentDirectory() + "/Assets/project02/downloads/";
-        downloadFilePath = downloadFolderPath + downloadFileName + "." + downloadFileExtension;
+        terrDownloadFilePath = downloadFolderPath + terrDownloadFileName + "." + terrDownloadFileExtension;
+        sattDownloadFilePath = downloadFolderPath + sattDownloadFileName + "." + sattDownloadFileExtension;
     }
 	
 	// Update is called once per frame
@@ -141,6 +188,12 @@ public class Foo : MonoBehaviour
 		if (Input.GetKeyDown(KeyCode.Space))
         {
             getHeightMap();
+        }
+
+
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            print(googQueryLink);
         }
 	}
 }
